@@ -25,12 +25,20 @@
 #include <ncurses.h>
 #include <signal.h>
 #include <locale.h>
+#include <dirent.h>
 #include <time.h>
-#include "rtinfo_ncurses.h"
+#include "sensurses.h"
+#include "sensors.h"
 
 sensors_t sensors;
 int __maxy, __maxx;
 int __lasty, __lastx;
+
+void diep(char *str) {
+	endwin();
+	perror(str);
+	exit(EXIT_FAILURE);
+}
 
 void resetconsole() {
 	clear();
@@ -151,39 +159,99 @@ void sensbox(sensor_t *sensor) {
 	wrefresh(sensor->window);
 }
 
+void update() {
+	unsigned int i;
+	sensor_t *sensor = sensors.items;
+	char buffer[256];
+	
+	for(i = 0; i < sensors.length; i++) {
+		sprintf(buffer, "%s/%s/%s", SENSORS_PATH, sensor->id, SENSORS_FILE);
+		sensor->value = sensors_read(buffer);
+		sensor->time  = time(NULL);
+		
+		sensor++;
+	}
+}
+
+unsigned int rebuild() {
+	char buffer[128];
+	DIR *directory;
+	struct dirent *entry;
+	sensor_t *sensor;
+	unsigned int index;
+	
+	//
+	// clearing previous list
+	//
+	for(index = 0; index < sensors.length; index++) {
+		free(sensors.items[index].id);
+		free(sensors.items[index].label);
+	}
+	
+	sensors.length = 0;
+	
+	//
+	// reading new directory entry
+	//
+	if(!(directory = opendir(SENSORS_PATH)))
+		diep("[-] opendir");
+		
+	while((entry = readdir(directory)))
+		sensors.length++;
+	
+	//
+	// setting up internal list
+	//
+	rewinddir(directory);
+	sensors.items = (sensor_t *) calloc(sizeof(sensor_t), sensors.length);
+	sensor = sensors.items;
+	index = 1;
+
+	while((entry = readdir(directory))) {
+		if(entry->d_name[0] == '.' || !strncmp(entry->d_name, "w1_", 3)) {
+			sensors.length--;
+			continue;
+		}
+		
+		// sensor id
+		sensor->id = strdup(entry->d_name);
+		
+		// common name (FIXME)
+		snprintf(buffer, sizeof(buffer), "Sensor %d", index++);
+		sensor->label = strdup(buffer);
+		
+		sensor++;
+	}
+	
+	closedir(directory);
+	
+	return sensors.length;
+}
+
 int main(void) {
 	unsigned int i;
 	
-	sensors.items    = (sensor_t *) malloc(sizeof(sensor_t) * 32);
-	sensors.capacity = 32;
-	sensors.length   = 3;
+	// default empty sensors
+	sensors.length = 0;
+	sensors.items  = NULL;
 	
-	sensors.items[0].id     = "12-23-45";
-	sensors.items[0].label  = "Room 1";
-	sensors.items[0].value  = 24.54;
-	sensors.items[0].time   = 1436212541;
-	sensors.items[0].window = NULL;
-	
-	sensors.items[1].id     = "12-##-45";
-	sensors.items[1].label  = "Room 2";
-	sensors.items[1].value  = 10.14;
-	sensors.items[1].time   = 1436212541;
-	sensors.items[1].window = NULL;
-	
-	sensors.items[2].id     = "@@-23-45";
-	sensors.items[2].label  = "Room 3";
-	sensors.items[2].value  = 34.54;
-	sensors.items[2].time   = 1436212541;
-	sensors.items[2].window = NULL;
-	
-	/* Handling Resize Signal */
+	// handling resize
 	signal(SIGINT, sighandler);
 	signal(SIGWINCH, sighandler);
 	
-	/* Initializing ncurses */
+	// initialize ncurses
 	initconsole();
 	
 	while(1) {
+		// rebuild sensors list
+		rebuild();
+		
+		// update sensors value
+		update();
+		
+		// rendering
+		resetconsole();
+		
 		for(i = 0; i < sensors.length; i++) {
 			sensbox(&sensors.items[i]);
 			sensors.items[i].value += 0.01;
@@ -191,8 +259,6 @@ int main(void) {
 		
 		usleep(1000000);
 	}
-
-	getchar();
 	
 	endwin();
 	

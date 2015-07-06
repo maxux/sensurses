@@ -15,6 +15,11 @@
 	#define BOX_MARGIN_TOP    1
 	#define BOX_MARGIN_LEFT   2
 	
+	
+	// #define SENSORS_PATH    "/tmp/sensors/"
+	#define SENSORS_PATH    "/sys/bus/w1/devices/"
+	#define SENSORS_FILE    "w1_slave"
+	
 	typedef struct sensor_t {
 		char *id;
 		char *label;
