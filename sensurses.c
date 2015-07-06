@@ -250,6 +250,9 @@ int main(void) {
 	// initialize ncurses
 	initconsole();
 	
+	printw("Initializing...");
+	refresh();
+	
 	while(1) {
 		// rebuild sensors list
 		rebuild();
