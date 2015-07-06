@@ -48,30 +48,30 @@ static int sensors_value(char *buffer) {
 
 /* read sensors current value */
 float sensors_read(char *filename) {
-	float value = 0;
+	float value = -101;
 	char buffer[1024];
 	FILE *fp;
 	
 	if(!(fp = fopen(filename, "r"))) {
-		perror(filename);
+		// perror(filename);
 		return 0;
 	}
 	
 	/* reading first line: checksum */
 	if(!(fgets(buffer, sizeof(buffer), fp))) {
-		perror("[-] fgets");
+		// perror("[-] fgets");
 		goto finish;
 	}
 	
 	/* checking checksum */
 	if(!sensors_checksum(buffer)) {
-		fprintf(stderr, "[-] sensor %s: invalid checksum\n", filename);
+		// fprintf(stderr, "[-] sensor %s: invalid checksum\n", filename);
 		goto finish;
 	}
 	
 	/* reading temperature value */
 	if(!(fgets(buffer, sizeof(buffer), fp))) {
-		perror("[-] fgets");
+		// perror("[-] fgets");
 		goto finish;
 	}
 	

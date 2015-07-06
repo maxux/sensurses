@@ -133,17 +133,25 @@ void sensbox(sensor_t *sensor) {
 	wattrset(sensor->window, (A_BOLD | COLOR_PAIR(5)));
 	wprintw(sensor->window, "[ %s ]", sensor->label);
 	
+	//
 	wmove(sensor->window, 2, (BOX_WIDTH / 2) - 3);
 	
-	if(sensor->value > 30)
-		wattrset(sensor->window, (A_BOLD | COLOR_PAIR(4)));
+	if(sensor->value > -100) {		
+		if(sensor->value > 30)
+			wattrset(sensor->window, (A_BOLD | COLOR_PAIR(4)));
+			
+		else if(sensor->value > 20)
+			wattrset(sensor->window, (A_BOLD | COLOR_PAIR(3)));
+			
+		else wattrset(sensor->window, (A_BOLD | COLOR_PAIR(7)));
 		
-	else if(sensor->value > 20)
-		wattrset(sensor->window, (A_BOLD | COLOR_PAIR(3)));
+		wprintw(sensor->window, "%02.2f°C", sensor->value);
 		
-	else wattrset(sensor->window, (A_BOLD | COLOR_PAIR(7)));
-		
-	wprintw(sensor->window, "%02.2f°C", sensor->value);
+	} else {
+		wattrset(sensor->window, (A_BOLD | COLOR_PAIR(5)));
+		wprintw(sensor->window, "XXXXXXX");
+	}	
+	
 	
 	wmove(sensor->window, 4, 3);
 	wattrset(sensor->window, (COLOR_PAIR(2)));
@@ -257,7 +265,7 @@ int main(void) {
 			sensors.items[i].value += 0.01;
 		}
 		
-		usleep(1000000);
+		usleep(10000000);
 	}
 	
 	endwin();
