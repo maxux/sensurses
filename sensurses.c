@@ -196,6 +196,7 @@ unsigned int rebuild() {
 		free(sensors.items[index].label);
 	}
 	
+	free(sensors.items);
 	sensors.length = 0;
 	
 	//
