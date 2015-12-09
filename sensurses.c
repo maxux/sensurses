@@ -75,12 +75,28 @@ void initconsole() {
 	refresh();
 }
 
+void cleanup() {
+	unsigned int index;
+	
+	//
+	// clearing previous list
+	//
+	for(index = 0; index < sensors.length; index++) {
+		free(sensors.items[index].id);
+		free(sensors.items[index].label);
+		delwin(sensors.items[index].window);
+	}
+	
+	free(sensors.items);
+}
+
 void sighandler(int signal) {
 	unsigned int i;
 	
 	switch(signal) {
 		case SIGINT:
 			endwin();
+			cleanup();
 			exit(EXIT_SUCCESS);
 		break;
 		
@@ -194,6 +210,7 @@ unsigned int rebuild() {
 	for(index = 0; index < sensors.length; index++) {
 		free(sensors.items[index].id);
 		free(sensors.items[index].label);
+		delwin(sensors.items[index].window);
 	}
 	
 	free(sensors.items);
@@ -272,6 +289,7 @@ int main(void) {
 		usleep(10000000);
 	}
 	
+	cleanup();
 	endwin();
 	
 	return 0;
